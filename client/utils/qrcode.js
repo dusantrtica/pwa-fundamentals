@@ -1,10 +1,8 @@
-import QrCode from 'qrcode-reader';
-
 /**
  * Convert QRcode data into a grocery item
- * 
+ *
  * @example
- * 
+ *
  *    let qrString = '1,Bananna,Fruit,/images/1.png,3.99,each';
  *    let groceryItem = qrCodeStringToObject(qrString)
  *    {
@@ -15,7 +13,7 @@ import QrCode from 'qrcode-reader';
  *      price: 3.99
  *      unit: 'each
  *    }
- * 
+ *
  * @public
  * @param {String} qrDataString QR code data
  * @return {Object} grocery item corresponding to QR code data
@@ -35,7 +33,7 @@ export function qrCodeStringToObject(qrDataString) {
 /**
  * Read an image file into an image buffer.
  * NOTE: This may be important for image processing inside a web worker
- * 
+ *
  * @public
  * @param {File} file file for QRcode image (i.e., from an <input type="file" /> )
  * @return {Promise<ImageData>} image buffer pre-loaded with QRcode image
@@ -71,28 +69,19 @@ export function fileToImageBuffer(file) {
  * Take an image buffer that's pre-populated with a QR code image
  * and process it using the qrcode-reader library. At the end, if all looks
  * well, add the item represented by the QRcode to the cart.
- * 
+ *
  * @public
- * @param {ImageData} imageBuffer 
+ * @param {ImageData} imageBuffer
  * @param {CartStore} cartStore
  * @return {Promise}
  */
 export function onQrCodeScan(imageBuffer, cartStore) {
   return new Promise((resolve/*, reject*/) => {
-
-    // BEGIN MAIN THREAD SOLUTION
-    let qr = new QrCode();
-    qr.callback = function(error, rawResult) {
-      if(error) {
-        self.postMessage({ error });
-        return;
-      }
-      let result = qrCodeStringToObject(rawResult.result);
-      resolve(result);
+    let worker = new Worker('qr-worker.js')
+    worker.postMessage(imageBuffer)
+    worker.onmessage = event => {
+      resolve(event.data.data)
     }
-    qr.decode(imageBuffer);
-    // END MAIN THREAD SOLUTION
-    
   }).then((qrData) => {
     cartStore.addItemToCart(qrData);
   });
