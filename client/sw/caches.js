@@ -1,4 +1,4 @@
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 1;
 const CACHE_PREFIX = `FEG-v${CACHE_VERSION}`;
 
 export const ALL_CACHES = {
@@ -66,7 +66,7 @@ function _shouldPrecacheFile(fileName) {
 export function precacheStaticAssets() {
   return fetch(ASSET_MANIFEST_URL)
     .then((response) => response.json())
-    .then((assetManifestJson) => {        
+    .then((assetManifestJson) => {
       let toPrefetch = Object
       .keys(assetManifestJson)
       .filter(_shouldPrecacheFile)

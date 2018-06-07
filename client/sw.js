@@ -38,9 +38,48 @@ function fetchImageOrFallback (fetchEvent) {
 	})
 }
 
+function fetchImageWithFallback (fetchEvent) {
+	return caches.open(ALL_CACHES.fallback).then((cache) => {
+		return fetch(fetchEvent.request, { mode: 'cors', credentials: 'omit'})
+		.then((response) => {
+			if(!response.ok) {
+				return cache.match(FALLBACK_IMAGE_URL)
+			} else {
+				let clonedResponse = response.clone();
+				// cache.put - optimalnije, cache.add ce da
+				// mozda opali fetch opet
+				cache.put(fetchEvent.request, clonedResponse);
+				return response;
+			}
+		})
+		.catch(() => {
+			return cache.match(fetchEvent.request)
+		})
+	})
+}
+
+function fetchApiDataWithFallback (fetchEvent) {
+	return caches.open(ALL_CACHES.fallback).then((cache) => {
+		return fetch(fetchEvent.request).then(response => {
+			// clone repsonse so we can return one and store one
+			let clonedResponse = response.clone();
+			// cache.put - optimalnije, cache.add ce da
+			// mozda opali fetch opet
+			cache.put(fetchEvent.request, clonedResponse);
+			return response;
+		})
+		.catch(() => {
+			return cache.match(fetchEvent.request);
+		})
+	})
+}
+
 self.addEventListener('fetch', (event) => {
 	let acceptHeader = event.request.headers.get('accept');
 	let requestUrl = new URL(event.request.url)
+
+	let isGroceryImage = acceptHeader.indexOf('image/*') >= 0 && requestUrl.pathname.indexOf('/images/') === 0;
+	let isFromApi = requestUrl.origin.indexOf('localhost:3100') >= 0;
 
 	event.respondWith(
 		caches.match(event.request, {cacheName:ALL_CACHES.prefetch}).then((response) => {
@@ -48,12 +87,11 @@ self.addEventListener('fetch', (event) => {
 				return response;
 			}
 
-			if (acceptHeader.indexOf('image/*') > -1) {
-				if (requestUrl.pathname.indexOf('/images/')=== 0) {
-					// event.respondWith(
-					return fetchImageOrFallback(event)
-					// )
-				}
+			if (isGroceryImage) {
+				return fetchImageWithFallback(event);
+				// return fetchImageOrFallback(event)
+			} else if (isFromApi) {
+				return fetchApiDataWithFallback(event);
 			}
 
 			return fetch(event.request)
