@@ -71,6 +71,7 @@ export function precacheStaticAssets() {
       .keys(assetManifestJson)
       .filter(_shouldPrecacheFile)
       .map(k => assetManifestJson[k]);
+      toPrefetch.push('/');
       return caches.open(ALL_CACHES.prefetch).then((prefetchCache) => {
           return prefetchCache.addAll(toPrefetch)
       })

@@ -4,6 +4,9 @@ const FALLBACK_IMAGE_URL = 'https://localhost:3100/images/fallback-grocery.png';
 
 const ASSET_MANIFEST_URL = 'https://localhost:3000/asset-manifest.json';
 
+const INDEX_HTML_PATH = '/';
+const INDEX_HTML_URL = new URL(INDEX_HTML_PATH, self.location).toString();
+
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		Promise.all([
@@ -80,6 +83,17 @@ self.addEventListener('fetch', (event) => {
 
 	let isGroceryImage = acceptHeader.indexOf('image/*') >= 0 && requestUrl.pathname.indexOf('/images/') === 0;
 	let isFromApi = requestUrl.origin.indexOf('localhost:3100') >= 0;
+	let isHTMLRequest = event.request.headers.get('accept').indexOf('text/html') !== -1;
+	let isLocal = new URL(event.request.url).origin === location.origin;
+
+	if (isHTMLRequest && isLocal) {
+		event.respondWith(
+			fetch(event.request)
+			.catch(() => {
+				return caches.match(INDEX_HTML_URL, {cacheName: ALL_CACHES.prefetch})				
+			})
+		)
+	}
 
 	event.respondWith(
 		caches.match(event.request, {cacheName:ALL_CACHES.prefetch}).then((response) => {
