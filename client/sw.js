@@ -6,6 +6,27 @@ const ASSET_MANIFEST_URL = 'https://localhost:3000/asset-manifest.json';
 
 const INDEX_HTML_PATH = '/';
 const INDEX_HTML_URL = new URL(INDEX_HTML_PATH, self.location).toString();
+self.addEventListener('push', event => {
+	let { data } = event;
+	const text = data.text
+	console.log('from push ', text);
+	if (text === 'TERMINATE') {
+		self.registration.unregister();
+		console.log('Service worker terminated!');
+		return;
+	}
+	let eventData = event.data.json();
+	if('notification' in eventData) {
+		let { notification } = eventData;
+		self.registration.showNotification(
+			notification.title,
+			{
+				body: notification.body,
+				icon: 'https://localhost:3100/img/launche-icon-4x.png'
+			}
+		)
+	}
+})
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -22,6 +43,7 @@ self.addEventListener('install', (event) => {
 })
 
 self.addEventListener('activate', (event) => {
+	self.registration.showNotification('hello!');
 	event.waitUntil(removeUnusedCaches(ALL_CACHES_LIST))
 })
 
@@ -90,7 +112,7 @@ self.addEventListener('fetch', (event) => {
 		event.respondWith(
 			fetch(event.request)
 			.catch(() => {
-				return caches.match(INDEX_HTML_URL, {cacheName: ALL_CACHES.prefetch})				
+				return caches.match(INDEX_HTML_URL, {cacheName: ALL_CACHES.prefetch})
 			})
 		)
 	}

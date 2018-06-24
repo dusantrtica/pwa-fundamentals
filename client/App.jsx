@@ -27,7 +27,7 @@ import { onQrCodeScan } from './utils/qrcode';
 class App extends Component {
   constructor(props) {
     super(props);
-    
+
     this.cartStore = new CartStore();
     this.groceryItemStore = new GroceryItemStore();
     this.orderStore = new OrderStore();

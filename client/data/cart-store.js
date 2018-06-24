@@ -90,7 +90,7 @@ export default class CartStore {
    * @return {Promise}
    */
   doCheckout() {
-    return fetch(`${API_ENDPOINT}/api/order`, {
+    return fetch(`${API_ENDPOINT}api/order`, {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
