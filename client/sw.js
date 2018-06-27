@@ -1,5 +1,6 @@
-import { precacheStaticAssets, removeUnusedCaches, ALL_CACHES, ALL_CACHES_LIST } from './sw/caches.js';
 import idb from 'idb';
+import { precacheStaticAssets, removeUnusedCaches, ALL_CACHES, ALL_CACHES_LIST } from './sw/caches.js';
+import {putItemToCart, getAllCartItems} from './data/database';
 const FALLBACK_IMAGE_URL = 'https://localhost:3100/images/fallback-grocery.png';
 const FALLBACK_IMAGE_URLS = [
 	'https://localhost:3100/images/fallback-grocery.png',
@@ -85,6 +86,34 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
 	self.registration.showNotification('hello!');
 	event.waitUntil(removeUnusedCaches(ALL_CACHES_LIST))
+})
+
+self.addEventListener('sync', (event) => {
+	debugger;
+	console.log('attempting sync', event.tag);
+	console.log('syncing', event.tag);
+
+	event.waitUntil(
+		getAllCartItems().then(cartItems => {
+			console.log(cartItems);
+			const unsynced = cartItems.filter(item => item.unsynced);
+			return fetch('https://localhost:3100/api/cart/items', {
+				method: 'PUT',
+				headers: {
+					'content-type': 'application/json'
+				},
+				body: JSON.stringify({data: unsynced})
+			})
+			.then(() => {
+				return Promise.all(unsynced.map(unsyncedItem => {
+					return putItemToCart({
+						...unsyncedItem,
+						unsynced: false
+					})
+				}))
+			})
+		})
+	)
 })
 
 function fallbackImageForRequest(request) {

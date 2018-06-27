@@ -2,6 +2,7 @@
 
 import ListenerSupport from './listener-support';
 import { endpoint as API_ENDPOINT } from '../utils/api';
+import {putItemToCart} from './database';
 
 /**
  * A class for keeing track of shopping cart state
@@ -69,8 +70,9 @@ export default class CartStore {
    * @private
    * @return {Promise} the new cart
    */
-  _saveCart() {
+  _saveCart(groceryItem) {
     this._onItemsUpdated();
+
     return fetch(`${API_ENDPOINT}api/cart/items`, {
         method: 'PUT',
         headers: {
@@ -80,6 +82,18 @@ export default class CartStore {
     })
     .then(response => response.json())
     .then(jsonData => jsonData.data)
+    .catch(() => {
+        console.log('Failed to PUT, putting item to cart db');
+        if (navigator.serviceWorker) {
+            navigator.serviceWorker.ready.then(registration => {
+                return putItemToCart(groceryItem).then(() => {
+                    return registration.sync.register('add-item-to-cart');
+                })
+            })
+        }
+    })
+    .then(() => {console.log('all good')})
+    .catch(console.log)
   }
 
   /**
@@ -125,7 +139,7 @@ export default class CartStore {
       this._items = this._items.concat(newItem);
     }
     // persist the cart (i.e., to an API)
-    this._saveCart();
+    this._saveCart(groceryItem);
   }
 
   /**
